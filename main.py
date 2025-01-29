@@ -4,11 +4,11 @@ import traceback
 import os
 from db_functions import DatabaseConnection, init_db, load_aya_data, get_current_aya, update_current_aya
 from components import (
-    NavigationControls,
-    SelectionPanel,
-    AudioPlayer,
-    ImageDisplay,
-    StatusBar
+    build_navigation_controls,
+    build_selection_panel,
+    create_audio_player,
+    create_image_display,
+    create_status_bar
 )
 
 def main(page: ft.Page):
@@ -117,13 +117,13 @@ def main(page: ft.Page):
         # Initialize UI Components
         current_aya = aya_data[current_index]
         
-        status_bar = StatusBar(
+        status_bar = create_status_bar(
             current_aya['sura_name'],
             current_aya['aya'],
             current_aya.get('aya_suffix', '')
         )
 
-        selection_panel = SelectionPanel(
+        selection_panel, sura_dropdown, aya_dropdown = build_selection_panel(
             sura_map,
             current_aya['sura_name'],
             current_aya['aya'],
@@ -131,17 +131,17 @@ def main(page: ft.Page):
             on_aya_change
         )
 
-        audio_player = AudioPlayer(
+        audio_player = create_audio_player(
             current_aya['audio'],
             on_audio_state_changed
         )
-        page.overlay.append(audio_player.build())
+        page.overlay.append(audio_player)
 
-        image_display = ImageDisplay(
+        image_display = create_image_display(
             current_aya['image']
         )
 
-        navigation_controls = NavigationControls(
+        navigation_controls = build_navigation_controls(
             prev_item,
             play_current,
             next_item_and_play
