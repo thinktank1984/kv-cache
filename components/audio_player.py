@@ -1,17 +1,26 @@
 # File: components/audio_player.py
-import flet as ft
+import flet_audio as fta
 
-def create_audio_player(initial_src, on_state_changed, volume=1.0):
-    audio = ft.Audio(
+def create_audio_player(
+    initial_src,
+    on_loaded,
+    on_duration_changed,
+    on_position_changed,
+    on_state_changed,
+    on_seek_complete,
+    volume=1.0,
+    balance=0,
+    playback_rate=1.0
+):
+    return fta.Audio(
         src=initial_src,
         autoplay=False,
         volume=volume,
-        on_state_changed=on_state_changed
+        balance=balance,
+        on_loaded=on_loaded,
+        on_duration_changed=on_duration_changed,
+        on_position_changed=on_position_changed,
+        on_state_changed=on_state_changed,
+        on_seek_complete=on_seek_complete,
+        playback_rate=playback_rate,
     )
-    
-    def update_source(new_src):
-        audio.src = new_src
-        audio.update()
-    
-    audio.update_source = update_source
-    return audio

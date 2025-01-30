@@ -2,6 +2,10 @@
 import flet as ft
 
 def build_selection_panel(sura_data, initial_sura, initial_aya, on_sura_change, on_aya_change):
+    panel = ft.Row(
+        alignment=ft.MainAxisAlignment.CENTER,
+    )
+    
     sura_dropdown = ft.Dropdown(
         width=200,
         label="Select Surah",
@@ -23,12 +27,20 @@ def build_selection_panel(sura_data, initial_sura, initial_aya, on_sura_change, 
         ],
         on_change=on_aya_change
     )
-
-    return (
-        ft.Row(
-            [sura_dropdown, aya_dropdown],
-            alignment=ft.MainAxisAlignment.CENTER,
-        ),
-        sura_dropdown,
-        aya_dropdown
-    )
+    
+    panel.controls = [sura_dropdown, aya_dropdown]
+    
+    def update_aya_options(sura_name):
+        aya_dropdown.options = [
+            ft.dropdown.Option(text=str(i))
+            for i in range(1, sura_data[sura_name]['last_aya'] + 1)
+        ]
+        aya_dropdown.value = "1"
+        aya_dropdown.update()
+    
+    # Add components as attributes
+    panel.sura_dropdown = sura_dropdown
+    panel.aya_dropdown = aya_dropdown
+    panel.update_aya_options = update_aya_options
+    
+    return panel

@@ -3,21 +3,6 @@ import os
 import traceback
 from typing import List, Dict, Optional
 
-class DatabaseConnection:
-    def __init__(self, db_path: str):
-        """Initialize database connection"""
-        self.conn = sqlite3.connect(db_path)
-        self.conn.row_factory = sqlite3.Row
-        
-    def close(self):
-        """Close the database connection"""
-        if self.conn:
-            self.conn.close()
-            
-    def get_connection(self) -> sqlite3.Connection:
-        """Get the database connection"""
-        return self.conn
-
 def init_db(conn: sqlite3.Connection) -> None:
     """Initialize the database and create tables if they don't exist"""
     print("\n=== Initializing Database ===")
@@ -90,7 +75,7 @@ def load_aya_data(conn: sqlite3.Connection) -> List[Dict]:
         
         result = [{
             'id': row[0],
-            'audio': os.path.join('q_files', row[1]),
+            'audio': os.path.abspath(os.path.join('q_files', row[1])),
             'image': os.path.join('q_files', row[2]),
             'sura': row[3],
             'aya': row[4],
