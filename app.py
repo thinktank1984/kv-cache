@@ -3,6 +3,7 @@ import sqlite3
 import traceback
 import os
 from components.page import create_page
+from components.audio_player import create_audio_player
 
 class QuranApp:
     def __init__(self):
@@ -10,6 +11,44 @@ class QuranApp:
         self.aya_data = []
         self.sura_map = {}
         self.audio_player = None
+        
+    def create_audio_player(self, src, should_play_on_load=False):
+        """Create an audio player with the specified source"""
+        def on_state_changed(e):
+            """Handle audio state changes"""
+            print(f"Audio state changed: {e.data}")
+            if e.data == "completed":
+                # Move to next item after audio completes
+                self.current_index = (self.current_index + 1) % len(self.aya_data)
+                if hasattr(self, 'update_content'):
+                    self.update_content()
+                
+        def on_loaded(e):
+            """Handle audio loaded event"""
+            print("Audio loaded")
+            if should_play_on_load:
+                self.play_current()
+                
+        return create_audio_player(
+            initial_src=src,
+            on_loaded=on_loaded,
+            on_duration_changed=lambda _: None,
+            on_position_changed=lambda _: None,
+            on_state_changed=on_state_changed,
+            on_seek_complete=lambda _: None
+        )
+        
+    def next_item_and_play(self):
+        """Play current item then move to next when complete"""
+        print("Playing current item")
+        if self.audio_player:
+            self.audio_player.play()
+            
+    def play_current(self):
+        """Play the current aya"""
+        print("Playing current aya")
+        if self.audio_player:
+            self.audio_player.play()
         
     def init_db(self):
         """Initialize the database and create current_aya table if it doesn't exist"""

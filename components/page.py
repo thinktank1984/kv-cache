@@ -36,11 +36,7 @@ def create_page(app, page: ft.Page):
         sura_dropdown = app.build_sura_dropdown()
         aya_dropdown = app.build_aya_dropdown(app.aya_data[app.current_index]['sura_name'])
 
-        app.audio_player = ft.Audio(
-            src=app.aya_data[app.current_index]['audio'],
-            autoplay=False,
-            volume=1.0
-        )
+        app.audio_player = app.create_audio_player(app.aya_data[app.current_index]['audio'])
         page.overlay.append(app.audio_player)
 
         img_display = ft.Image(
@@ -50,28 +46,13 @@ def create_page(app, page: ft.Page):
             fit=ft.ImageFit.CONTAIN,
         )
 
-        def play_current(e=None):
-            """Play the current aya"""
-            print("Playing current aya")
-            app.audio_player.play()
-            page.update()
-
         def update_content():
             """Update the UI content"""
             print(f"\n=== Updating content for index {app.current_index} ===")
             
-            # Create new audio player with correct source
-            new_audio = ft.Audio(
-                src=app.aya_data[app.current_index]['audio'],
-                autoplay=False,
-                volume=1.0
-            )
-            
-            # Update overlay with new audio player
-            page.overlay.clear()
-            page.overlay.append(new_audio)
-            new_audio.on_state_changed = on_audio_state_changed
-            app.audio_player = new_audio
+            # Update audio player source if it exists
+            if app.audio_player:
+                app.audio_player.src = app.aya_data[app.current_index]['audio']
             
             # Update image and text
             img_display.src = app.aya_data[app.current_index]['image']
@@ -116,26 +97,15 @@ def create_page(app, page: ft.Page):
                 app.current_index = new_index
                 update_content()
 
-        def next_item_and_play(e=None):
-            """Move to next item and play it"""
-            app.current_index = (app.current_index + 1) % len(app.aya_data)
-            print(f"Moving to next item and playing, new index: {app.current_index}")
-            update_content()
-            play_current()
-
         def prev_item(e=None):
             """Move to previous item without playing"""
             app.current_index = (app.current_index - 1) % len(app.aya_data)
             print(f"Moving to previous item, new index: {app.current_index}")
             update_content()
 
-        def on_audio_state_changed(e):
-            """Handle audio state changes"""
-            if e.data == "completed":
-                next_item_and_play()
-
-        # Set up event handlers
-        app.audio_player.on_state_changed = on_audio_state_changed
+        # Store update_content method on app instance for use in callbacks
+        app.update_content = update_content
+        
         sura_dropdown.on_change = on_sura_change
         aya_dropdown.on_change = on_aya_change
 
@@ -159,7 +129,7 @@ def create_page(app, page: ft.Page):
                             ft.IconButton(
                                 icon=ft.icons.PLAY_ARROW,
                                 icon_size=30,
-                                on_click=play_current,
+                                on_click=lambda e: app.next_item_and_play(),
                             ),
                         ],
                         alignment=ft.MainAxisAlignment.CENTER,
