@@ -1,7 +1,7 @@
 import sqlite3
 import os
 import traceback
-from typing import List, Dict, Optional
+from typing import List, Dict
 
 def init_db(conn: sqlite3.Connection) -> None:
     """Initialize the database and create tables if they don't exist"""
@@ -9,10 +9,10 @@ def init_db(conn: sqlite3.Connection) -> None:
     try:
         cursor = conn.cursor()
         
-        # Create tables if they don't exist using exact DDL from original
         create_current_aya_sql = '''
         CREATE TABLE IF NOT EXISTS current_aya (
-            current_aya INTEGER
+            current_aya INTEGER,
+            speed REAL DEFAULT 1.0
         );
         '''
         
@@ -44,14 +44,15 @@ def init_db(conn: sqlite3.Connection) -> None:
         
         if count == 0:
             print("Initializing current_aya with first aya")
-            cursor.execute('INSERT INTO current_aya (current_aya) VALUES (1)')
+            cursor.execute('INSERT INTO current_aya (current_aya, speed) VALUES (1, 1)')
+            conn.commit()
         
-        conn.commit()
         print("Database initialization completed successfully")
     except Exception as e:
         print(f"Error in init_db: {str(e)}")
         print("Traceback:")
         print(traceback.format_exc())
+        conn.rollback()
         raise
 
 def load_aya_data(conn: sqlite3.Connection) -> List[Dict]:
@@ -100,8 +101,9 @@ def get_current_aya(conn: sqlite3.Connection) -> int:
         print(f"Current aya query result: {result}")
         
         if result is None:
-            # If no row exists, insert default value 1
-            cursor.execute('INSERT INTO current_aya (current_aya) VALUES (1)')
+            # If no row exists, insert default values
+            conn.execute('BEGIN TRANSACTION')
+            cursor.execute('INSERT INTO current_aya (current_aya, speed) VALUES (1, 1.0)')
             conn.commit()
             return 1
             
@@ -109,23 +111,81 @@ def get_current_aya(conn: sqlite3.Connection) -> int:
     except Exception as e:
         print(f"Error in get_current_aya: {str(e)}")
         print(traceback.format_exc())
+        conn.rollback()
+        raise
+
+def get_speed(conn: sqlite3.Connection) -> float:
+    """Get the current speed from the database"""
+    print("\n=== Getting current speed ===")
+    try:
+        cursor = conn.cursor()
+        
+        cursor.execute('SELECT speed FROM current_aya LIMIT 1')
+        result = cursor.fetchone()
+        print(f"Current speed query result: {result}")
+        
+        if result is None:
+            # If no row exists, insert default values
+            conn.execute('BEGIN TRANSACTION')
+            cursor.execute('INSERT INTO current_aya (current_aya, speed) VALUES (1, 1.0)')
+            conn.commit()
+            return 1.0
+            
+        return float(result[0])
+    except Exception as e:
+        print(f"Error in get_speed: {str(e)}")
+        print(traceback.format_exc())
+        conn.rollback()
+        raise
+
+def update_speed(conn: sqlite3.Connection, speed: float) -> None:
+    """Update the speed in the database"""
+    print(f"\n=== Updating speed to {speed} ===")
+    try:
+        conn.execute('BEGIN TRANSACTION')
+        cursor = conn.cursor()
+        
+        # Check if row exists
+        cursor.execute('SELECT COUNT(*) FROM current_aya')
+        count = cursor.fetchone()[0]
+        
+        if count == 0:
+            # If no row exists, insert new row
+            cursor.execute('INSERT INTO current_aya (current_aya, speed) VALUES (1, ?)', (speed,))
+        else:
+            # Update existing row
+            cursor.execute('UPDATE current_aya SET speed = ?', (speed,))
+        
+        conn.commit()
+        print("Speed update successful")
+    except Exception as e:
+        print(f"Error in update_speed: {str(e)}")
+        print(traceback.format_exc())
+        conn.rollback()
         raise
 
 def update_current_aya(conn: sqlite3.Connection, aya_id: int) -> None:
     """Update the current aya in the database"""
     print(f"\n=== Updating current aya to {aya_id} ===")
     try:
+        conn.execute('BEGIN TRANSACTION')
         cursor = conn.cursor()
         
-        # First delete existing row since we only want one row
-        cursor.execute('DELETE FROM current_aya')
+        # Check if row exists
+        cursor.execute('SELECT COUNT(*) FROM current_aya')
+        count = cursor.fetchone()[0]
         
-        # Then insert new value
-        cursor.execute('INSERT INTO current_aya (current_aya) VALUES (?)', (aya_id,))
+        if count == 0:
+            # If no row exists, insert new row
+            cursor.execute('INSERT INTO current_aya (current_aya, speed) VALUES (?, 1.0)', (aya_id,))
+        else:
+            # Update existing row
+            cursor.execute('UPDATE current_aya SET current_aya = ?', (aya_id,))
         
         conn.commit()
         print("Update successful")
     except Exception as e:
         print(f"Error in update_current_aya: {str(e)}")
         print(traceback.format_exc())
+        conn.rollback()
         raise

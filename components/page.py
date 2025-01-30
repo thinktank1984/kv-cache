@@ -32,6 +32,17 @@ def create_page(app, page: ft.Page):
             weight="bold"
         )
 
+        speed_text = ft.Text(f"Speed: {app.speed}x", size=14)
+
+        def update_speed(change):
+            current_rate = app.speed
+            new_rate = round(current_rate + change, 1)
+            # Ensure speed stays within reasonable bounds
+            new_rate = max(0.5, min(2.0, new_rate))
+            app.update_speed(new_rate)
+            speed_text.value = f"Speed: {new_rate}x"
+            page.update()
+
         # Create dropdowns
         sura_dropdown = app.build_sura_dropdown()
         aya_dropdown = app.build_aya_dropdown(app.aya_data[app.current_index]['sura_name'])
@@ -50,9 +61,17 @@ def create_page(app, page: ft.Page):
             """Update the UI content"""
             print(f"\n=== Updating content for index {app.current_index} ===")
             
-            # Update audio player source if it exists
+            # Create new audio player with current speed
             if app.audio_player:
-                app.audio_player.src = app.aya_data[app.current_index]['audio']
+                new_player = app.create_audio_player(
+                    app.aya_data[app.current_index]['audio']
+                )
+                # Remove old player and add new one
+                page.overlay.remove(app.audio_player)
+                page.overlay.append(new_player)
+                app.audio_player = new_player
+                # Update speed display
+                speed_text.value = f"Speed: {app.speed}x"
             
             # Update image and text
             img_display.src = app.aya_data[app.current_index]['image']
@@ -130,6 +149,24 @@ def create_page(app, page: ft.Page):
                                 icon=ft.icons.PLAY_ARROW,
                                 icon_size=30,
                                 on_click=lambda e: app.next_item_and_play(),
+                            ),
+                        ],
+                        alignment=ft.MainAxisAlignment.CENTER,
+                    ),
+                    ft.Row(
+                        [
+                            ft.IconButton(
+                                icon=ft.icons.REMOVE,
+                                icon_size=20,
+                                on_click=lambda e: update_speed(-0.1),
+                                tooltip="Decrease speed by 10%",
+                            ),
+                            speed_text,
+                            ft.IconButton(
+                                icon=ft.icons.ADD,
+                                icon_size=20,
+                                on_click=lambda e: update_speed(0.1),
+                                tooltip="Increase speed by 10%",
                             ),
                         ],
                         alignment=ft.MainAxisAlignment.CENTER,
